@@ -1,8 +1,10 @@
 function! s:OpenUrl(url)
-  if executable('firefox')
-    execute "! firefox -new-tab " . a:url . "&"
+  if executable('vimb')
+    call system("vimb " . a:url . " &")
+  elseif executable('firefox')
+    call system("firefox -new-tab " . a:url . " &")
   else
-    execute "! open " . a:url
+    call system("open " . a:url)
   endif
 endfunction
 
