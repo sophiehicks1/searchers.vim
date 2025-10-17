@@ -1,32 +1,41 @@
+function! s:GetUtf8Bytes(char)
+  let charcode = char2nr(a:char)
+  " Handle multi-byte UTF-8 characters
+  let bytes = []
+  if charcode < 128
+    let bytes = [charcode]
+  else
+    " Get the actual bytes of the character
+    let byte_str = iconv(a:char, &encoding, 'utf-8')
+    for j in range(len(byte_str))
+      call add(bytes, char2nr(byte_str[j]))
+    endfor
+  endif
+  return bytes
+endfunction
+
+function! s:UrlEncodeChar(char)
+  let charcode = char2nr(a:char)
+  if (charcode >= 65 && charcode <= 90) || 
+        \ (charcode >= 97 && charcode <= 122) || 
+        \ (charcode >= 48 && charcode <= 57) ||
+        \ a:char ==# '-' || a:char ==# '_' || a:char ==# '.' || a:char ==# '~'
+    return a:char
+  else
+    let bytes = s:GetUtf8Bytes(a:char)
+    let res = ''
+    for byte in bytes
+      let res .= printf('%%%02X', byte)
+    endfor
+    return res
+  endif
+endfunction
+
 function! s:UrlEncode(str)
   let encoded = ''
   let i = 0
   while i < len(a:str)
-    let char = a:str[i]
-    let charcode = char2nr(char)
-    " Keep unreserved characters: A-Z a-z 0-9 - _ . ~
-    if (charcode >= 65 && charcode <= 90) || 
-          \ (charcode >= 97 && charcode <= 122) || 
-          \ (charcode >= 48 && charcode <= 57) ||
-          \ char ==# '-' || char ==# '_' || char ==# '.' || char ==# '~'
-      let encoded .= char
-    else
-      " Handle multi-byte UTF-8 characters
-      let bytes = []
-      if charcode < 128
-        let bytes = [charcode]
-      else
-        " Get the actual bytes of the character
-        let byte_str = iconv(char, &encoding, 'utf-8')
-        for j in range(len(byte_str))
-          call add(bytes, char2nr(byte_str[j]))
-        endfor
-      endif
-      " Percent-encode each byte
-      for byte in bytes
-        let encoded .= printf('%%%02X', byte)
-      endfor
-    endif
+    let encoded .= s:UrlEncodeChar(a:str[i])
     let i += 1
   endwhile
   return encoded
